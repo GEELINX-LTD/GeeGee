@@ -1,0 +1,84 @@
+syntax = "proto3";
+
+package geegeepb.v1;
+
+option go_package = "github.com/geelinx-ltd/geegee/api/proto;geegeepb";
+
+// ProbeService 提供探针与主控端通讯的 RPC 方法
+service ProbeService {
+  // 节点向主控端建立基于流的双向长连接上报高频数据
+  rpc ReportMetrics(stream ReportRequest) returns (stream ReportResponse);
+}
+
+// ---------------- 上报相关 ----------------
+
+message ReportRequest {
+  string node_id = 1;
+  int64 timestamp = 2; // 上报时的 Unix 时间戳毫秒
+  
+  // 包含的各类度量数据 (边缘聚合后)
+  CPUSummary cpu = 3;
+  MemSummary mem = 4;
+  DiskSummary disk = 5;
+  NetSummary net = 6;
+  KVMSummary kvm = 7;
+}
+
+message CPUSummary {
+  string model_name = 1;
+  int32 cores = 2;
+  double mhz = 3;
+  repeated double usage_perc = 4;
+  double load1 = 5;
+  double load5 = 6;
+  double load15 = 7;
+}
+
+message MemSummary {
+  uint64 total = 1;
+  uint64 available = 2;
+  uint64 used = 3;
+  double used_percent = 4;
+  uint64 swap_total = 5;
+  uint64 swap_free = 6;
+}
+
+message DiskSummary {
+  uint64 read_bytes = 1;
+  uint64 write_bytes = 2;
+  uint64 read_count = 3;
+  uint64 write_count = 4;
+  uint64 iops_in_progress = 5;
+}
+
+message NetSummary {
+  uint64 bytes_recv = 1;
+  uint64 bytes_sent = 2;
+  uint64 packets_recv = 3;
+  uint64 packets_sent = 4;
+  // 高级突发网络特征
+  uint64 microburst_events = 5;
+  double burst_p95_rate = 6; // 例如 p95 的发包/收包率极值
+}
+
+message KVMSummary {
+  int32 total_vms = 1;
+  int32 active_vms = 2;
+  int32 total_alloc_vcpu = 3;
+  uint64 total_alloc_mem = 4;
+}
+
+// ReportResponse 主控端针对探针流返回的下发指令或确认
+message ReportResponse {
+  bool success = 1;
+  string message = 2;
+  
+  // 留给将来动态下发网络质量探测的目标（比如让节点执行对某个 IP 的 TCPPing）
+  repeated ProbeTarget probe_targets = 3;
+}
+
+message ProbeTarget {
+  string ip = 1;
+  int32 port = 2;
+  string target_type = 3; // e.g., "tcpping", "icmp"
+}
