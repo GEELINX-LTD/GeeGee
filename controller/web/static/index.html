@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GeeGee Probe Console</title>
+    <!-- 引入自定义极客风样式 -->
+    <link rel="stylesheet" href="/css/app.css">
+    <!-- 预加载原生字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;700&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <!-- ECharts CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+</head>
+<body>
+
+    <!-- 粒子星空背景层 -->
+    <div id="particles-bg"></div>
+
+    <div class="dashboard-container">
+        <!-- 头部标题栏 -->
+        <header class="glass-header">
+            <div class="logo-area">
+                <span class="pulse-dot"></span>
+                <h1>GEEGEE <span class="highlight">O˥O</span></h1>
+            </div>
+            <div class="status-indicator">
+                <span id="global-status-text">Controller Active</span>
+            </div>
+        </header>
+
+        <!-- 主结构分隔 -->
+        <main class="main-layout">
+            
+            <!-- 左侧：探针列表 -->
+            <aside class="glass-panel node-sidebar">
+                <h2>Active Probes</h2>
+                <div id="node-list" class="node-list">
+                    <!-- JS 动态注入节点卡片 -->
+                    <div class="loading-text">Scanning metrics...</div>
+                </div>
+            </aside>
+
+            <!-- 右侧：当前选中探针的时序波浪图表面板 -->
+            <section class="glass-panel charts-area">
+                <div class="panel-header">
+                    <h2 id="current-node-title">Select a node to view metrics</h2>
+                    <div class="mini-metrics" id="current-node-summary">
+                        <!-- JS 注入实时当前数值 -->
+                    </div>
+                </div>
+                
+                <div class="charts-grid">
+                    <!-- ECharts 挂载点 -->
+                    <div class="chart-box glass-card">
+                        <div class="chart-title">TCP Ping RTT (ms)</div>
+                        <div id="chart-ping" class="echart-container"></div>
+                    </div>
+                    
+                    <div class="chart-box glass-card">
+                        <div class="chart-title">CPU & Memory Usage (%)</div>
+                        <div id="chart-resources" class="echart-container"></div>
+                    </div>
+                    
+                    <div class="chart-box glass-card">
+                        <div class="chart-title">Network Microburst (Events)</div>
+                        <div id="chart-net" class="echart-container"></div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- 业务逻辑 -->
+    <script src="/js/app.js"></script>
+</body>
+</html>

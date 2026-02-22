@@ -11,12 +11,14 @@ import (
 // GrpcServer 实现了 geegeepb.ProbeServiceServer 接口
 type GrpcServer struct {
 	pb.UnimplementedProbeServiceServer
-	db *storage.TSDB
+	db    *storage.TSDB
+	cache *storage.MemoryCache
 }
 
-func NewGrpcServer(db *storage.TSDB) *GrpcServer {
+func NewGrpcServer(db *storage.TSDB, cache *storage.MemoryCache) *GrpcServer {
 	return &GrpcServer{
-		db: db,
+		db:    db,
+		cache: cache,
 	}
 }
 
@@ -44,6 +46,10 @@ func (s *GrpcServer) ReportMetrics(stream pb.ProbeService_ReportMetricsServer) e
 
 		log.Printf("Recv from Node [%s]: CPU Load1=%.2f, MEM Used=%.2f%%, NET Burst=%d, Pings=%d (Target1 Avg: %.2fms)",
 			req.NodeId, req.Cpu.Load1, req.Mem.UsedPercent, req.Net.MicroburstEvents, pingCount, avgRtt)
+
+		if s.cache != nil {
+			s.cache.Ingest(req)
+		}
 
 		// 异步吸入 TSDB (避免阻塞 gRPC 接收主流)
 		if s.db != nil {
