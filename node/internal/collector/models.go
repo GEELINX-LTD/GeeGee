@@ -1,12 +1,15 @@
 package collector
 
+import "github.com/geelinx-ltd/geegee/node/internal/prober"
+
 // NodeMetrics 表示单个节点从探针收集上来的基础汇总数据
 type NodeMetrics struct {
-	CPU  CPUMetrics  `json:"cpu"`
-	Mem  MemMetrics  `json:"mem"`
-	Disk DiskMetrics `json:"disk"`
-	Net  NetMetrics  `json:"net"`
-	KVM  KVMMetrics  `json:"kvm"`
+	CPU  CPUMetrics          `json:"cpu"`
+	Mem  MemMetrics          `json:"mem"`
+	Disk DiskMetrics         `json:"disk"`
+	Net  NetMetrics          `json:"net"`
+	KVM  KVMMetrics          `json:"kvm"`
+	Ping []prober.PingResult `json:"ping"`
 }
 
 // CPUMetrics 包含 CPU 相关的信息

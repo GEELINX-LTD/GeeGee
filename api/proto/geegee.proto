@@ -22,6 +22,9 @@ message ReportRequest {
   DiskSummary disk = 5;
   NetSummary net = 6;
   KVMSummary kvm = 7;
+  
+  // 网络连通性探测测算结果
+  repeated PingResult ping_results = 8;
 }
 
 message CPUSummary {
@@ -66,6 +69,16 @@ message KVMSummary {
   int32 active_vms = 2;
   int32 total_alloc_vcpu = 3;
   uint64 total_alloc_mem = 4;
+}
+
+message PingResult {
+  string target_ip = 1;
+  int32 target_port = 2;
+  double min_rtt_ms = 3;
+  double max_rtt_ms = 4;
+  double avg_rtt_ms = 5;
+  double packet_loss_rate = 6; // 丢包率 0.0 - 1.0
+  string target_type = 7; // tcpping, icmp
 }
 
 // ReportResponse 主控端针对探针流返回的下发指令或确认

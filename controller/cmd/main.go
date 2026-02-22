@@ -9,6 +9,7 @@ import (
 
 	pb "github.com/geelinx-ltd/geegee/api/proto"
 	"github.com/geelinx-ltd/geegee/controller/internal/server"
+	"github.com/geelinx-ltd/geegee/controller/internal/storage"
 	"google.golang.org/grpc"
 )
 
@@ -21,9 +22,11 @@ func main() {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// 实例化 gRPC 服务
+	// 实例化后端 TSDB 及 gRPC 服务
+	// 此处后续可根据配置文件调整写入地址
+	tsdb := storage.NewTSDB("http://localhost:8428/api/v1/import/prometheus")
 	grpcServer := grpc.NewServer()
-	probeServer := server.NewGrpcServer()
+	probeServer := server.NewGrpcServer(tsdb)
 
 	// 注册服务
 	pb.RegisterProbeServiceServer(grpcServer, probeServer)

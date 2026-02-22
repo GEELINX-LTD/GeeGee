@@ -26,11 +26,13 @@ type ReportRequest struct {
 	NodeId    string                 `protobuf:"bytes,1,opt,name=node_id,json=nodeId,proto3" json:"node_id,omitempty"`
 	Timestamp int64                  `protobuf:"varint,2,opt,name=timestamp,proto3" json:"timestamp,omitempty"` // 上报时的 Unix 时间戳毫秒
 	// 包含的各类度量数据 (边缘聚合后)
-	Cpu           *CPUSummary  `protobuf:"bytes,3,opt,name=cpu,proto3" json:"cpu,omitempty"`
-	Mem           *MemSummary  `protobuf:"bytes,4,opt,name=mem,proto3" json:"mem,omitempty"`
-	Disk          *DiskSummary `protobuf:"bytes,5,opt,name=disk,proto3" json:"disk,omitempty"`
-	Net           *NetSummary  `protobuf:"bytes,6,opt,name=net,proto3" json:"net,omitempty"`
-	Kvm           *KVMSummary  `protobuf:"bytes,7,opt,name=kvm,proto3" json:"kvm,omitempty"`
+	Cpu  *CPUSummary  `protobuf:"bytes,3,opt,name=cpu,proto3" json:"cpu,omitempty"`
+	Mem  *MemSummary  `protobuf:"bytes,4,opt,name=mem,proto3" json:"mem,omitempty"`
+	Disk *DiskSummary `protobuf:"bytes,5,opt,name=disk,proto3" json:"disk,omitempty"`
+	Net  *NetSummary  `protobuf:"bytes,6,opt,name=net,proto3" json:"net,omitempty"`
+	Kvm  *KVMSummary  `protobuf:"bytes,7,opt,name=kvm,proto3" json:"kvm,omitempty"`
+	// 网络连通性探测测算结果
+	PingResults   []*PingResult `protobuf:"bytes,8,rep,name=ping_results,json=pingResults,proto3" json:"ping_results,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -110,6 +112,13 @@ func (x *ReportRequest) GetNet() *NetSummary {
 func (x *ReportRequest) GetKvm() *KVMSummary {
 	if x != nil {
 		return x.Kvm
+	}
+	return nil
+}
+
+func (x *ReportRequest) GetPingResults() []*PingResult {
+	if x != nil {
+		return x.PingResults
 	}
 	return nil
 }
@@ -519,6 +528,98 @@ func (x *KVMSummary) GetTotalAllocMem() uint64 {
 	return 0
 }
 
+type PingResult struct {
+	state          protoimpl.MessageState `protogen:"open.v1"`
+	TargetIp       string                 `protobuf:"bytes,1,opt,name=target_ip,json=targetIp,proto3" json:"target_ip,omitempty"`
+	TargetPort     int32                  `protobuf:"varint,2,opt,name=target_port,json=targetPort,proto3" json:"target_port,omitempty"`
+	MinRttMs       float64                `protobuf:"fixed64,3,opt,name=min_rtt_ms,json=minRttMs,proto3" json:"min_rtt_ms,omitempty"`
+	MaxRttMs       float64                `protobuf:"fixed64,4,opt,name=max_rtt_ms,json=maxRttMs,proto3" json:"max_rtt_ms,omitempty"`
+	AvgRttMs       float64                `protobuf:"fixed64,5,opt,name=avg_rtt_ms,json=avgRttMs,proto3" json:"avg_rtt_ms,omitempty"`
+	PacketLossRate float64                `protobuf:"fixed64,6,opt,name=packet_loss_rate,json=packetLossRate,proto3" json:"packet_loss_rate,omitempty"` // 丢包率 0.0 - 1.0
+	TargetType     string                 `protobuf:"bytes,7,opt,name=target_type,json=targetType,proto3" json:"target_type,omitempty"`                 // tcpping, icmp
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *PingResult) Reset() {
+	*x = PingResult{}
+	mi := &file_geegee_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *PingResult) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*PingResult) ProtoMessage() {}
+
+func (x *PingResult) ProtoReflect() protoreflect.Message {
+	mi := &file_geegee_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use PingResult.ProtoReflect.Descriptor instead.
+func (*PingResult) Descriptor() ([]byte, []int) {
+	return file_geegee_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *PingResult) GetTargetIp() string {
+	if x != nil {
+		return x.TargetIp
+	}
+	return ""
+}
+
+func (x *PingResult) GetTargetPort() int32 {
+	if x != nil {
+		return x.TargetPort
+	}
+	return 0
+}
+
+func (x *PingResult) GetMinRttMs() float64 {
+	if x != nil {
+		return x.MinRttMs
+	}
+	return 0
+}
+
+func (x *PingResult) GetMaxRttMs() float64 {
+	if x != nil {
+		return x.MaxRttMs
+	}
+	return 0
+}
+
+func (x *PingResult) GetAvgRttMs() float64 {
+	if x != nil {
+		return x.AvgRttMs
+	}
+	return 0
+}
+
+func (x *PingResult) GetPacketLossRate() float64 {
+	if x != nil {
+		return x.PacketLossRate
+	}
+	return 0
+}
+
+func (x *PingResult) GetTargetType() string {
+	if x != nil {
+		return x.TargetType
+	}
+	return ""
+}
+
 // ReportResponse 主控端针对探针流返回的下发指令或确认
 type ReportResponse struct {
 	state   protoimpl.MessageState `protogen:"open.v1"`
@@ -532,7 +633,7 @@ type ReportResponse struct {
 
 func (x *ReportResponse) Reset() {
 	*x = ReportResponse{}
-	mi := &file_geegee_proto_msgTypes[6]
+	mi := &file_geegee_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -544,7 +645,7 @@ func (x *ReportResponse) String() string {
 func (*ReportResponse) ProtoMessage() {}
 
 func (x *ReportResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_geegee_proto_msgTypes[6]
+	mi := &file_geegee_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -557,7 +658,7 @@ func (x *ReportResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ReportResponse.ProtoReflect.Descriptor instead.
 func (*ReportResponse) Descriptor() ([]byte, []int) {
-	return file_geegee_proto_rawDescGZIP(), []int{6}
+	return file_geegee_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ReportResponse) GetSuccess() bool {
@@ -592,7 +693,7 @@ type ProbeTarget struct {
 
 func (x *ProbeTarget) Reset() {
 	*x = ProbeTarget{}
-	mi := &file_geegee_proto_msgTypes[7]
+	mi := &file_geegee_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -604,7 +705,7 @@ func (x *ProbeTarget) String() string {
 func (*ProbeTarget) ProtoMessage() {}
 
 func (x *ProbeTarget) ProtoReflect() protoreflect.Message {
-	mi := &file_geegee_proto_msgTypes[7]
+	mi := &file_geegee_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -617,7 +718,7 @@ func (x *ProbeTarget) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProbeTarget.ProtoReflect.Descriptor instead.
 func (*ProbeTarget) Descriptor() ([]byte, []int) {
-	return file_geegee_proto_rawDescGZIP(), []int{7}
+	return file_geegee_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *ProbeTarget) GetIp() string {
@@ -645,7 +746,7 @@ var File_geegee_proto protoreflect.FileDescriptor
 
 const file_geegee_proto_rawDesc = "" +
 	"\n" +
-	"\fgeegee.proto\x12\vgeegeepb.v1\"\xa0\x02\n" +
+	"\fgeegee.proto\x12\vgeegeepb.v1\"\xdc\x02\n" +
 	"\rReportRequest\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x1c\n" +
 	"\ttimestamp\x18\x02 \x01(\x03R\ttimestamp\x12)\n" +
@@ -653,7 +754,8 @@ const file_geegee_proto_rawDesc = "" +
 	"\x03mem\x18\x04 \x01(\v2\x17.geegeepb.v1.MemSummaryR\x03mem\x12,\n" +
 	"\x04disk\x18\x05 \x01(\v2\x18.geegeepb.v1.DiskSummaryR\x04disk\x12)\n" +
 	"\x03net\x18\x06 \x01(\v2\x17.geegeepb.v1.NetSummaryR\x03net\x12)\n" +
-	"\x03kvm\x18\a \x01(\v2\x17.geegeepb.v1.KVMSummaryR\x03kvm\"\xb6\x01\n" +
+	"\x03kvm\x18\a \x01(\v2\x17.geegeepb.v1.KVMSummaryR\x03kvm\x12:\n" +
+	"\fping_results\x18\b \x03(\v2\x17.geegeepb.v1.PingResultR\vpingResults\"\xb6\x01\n" +
 	"\n" +
 	"CPUSummary\x12\x1d\n" +
 	"\n" +
@@ -700,7 +802,21 @@ const file_geegee_proto_rawDesc = "" +
 	"\n" +
 	"active_vms\x18\x02 \x01(\x05R\tactiveVms\x12(\n" +
 	"\x10total_alloc_vcpu\x18\x03 \x01(\x05R\x0etotalAllocVcpu\x12&\n" +
-	"\x0ftotal_alloc_mem\x18\x04 \x01(\x04R\rtotalAllocMem\"\x83\x01\n" +
+	"\x0ftotal_alloc_mem\x18\x04 \x01(\x04R\rtotalAllocMem\"\xef\x01\n" +
+	"\n" +
+	"PingResult\x12\x1b\n" +
+	"\ttarget_ip\x18\x01 \x01(\tR\btargetIp\x12\x1f\n" +
+	"\vtarget_port\x18\x02 \x01(\x05R\n" +
+	"targetPort\x12\x1c\n" +
+	"\n" +
+	"min_rtt_ms\x18\x03 \x01(\x01R\bminRttMs\x12\x1c\n" +
+	"\n" +
+	"max_rtt_ms\x18\x04 \x01(\x01R\bmaxRttMs\x12\x1c\n" +
+	"\n" +
+	"avg_rtt_ms\x18\x05 \x01(\x01R\bavgRttMs\x12(\n" +
+	"\x10packet_loss_rate\x18\x06 \x01(\x01R\x0epacketLossRate\x12\x1f\n" +
+	"\vtarget_type\x18\a \x01(\tR\n" +
+	"targetType\"\x83\x01\n" +
 	"\x0eReportResponse\x12\x18\n" +
 	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\x12=\n" +
@@ -725,7 +841,7 @@ func file_geegee_proto_rawDescGZIP() []byte {
 	return file_geegee_proto_rawDescData
 }
 
-var file_geegee_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_geegee_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_geegee_proto_goTypes = []any{
 	(*ReportRequest)(nil),  // 0: geegeepb.v1.ReportRequest
 	(*CPUSummary)(nil),     // 1: geegeepb.v1.CPUSummary
@@ -733,8 +849,9 @@ var file_geegee_proto_goTypes = []any{
 	(*DiskSummary)(nil),    // 3: geegeepb.v1.DiskSummary
 	(*NetSummary)(nil),     // 4: geegeepb.v1.NetSummary
 	(*KVMSummary)(nil),     // 5: geegeepb.v1.KVMSummary
-	(*ReportResponse)(nil), // 6: geegeepb.v1.ReportResponse
-	(*ProbeTarget)(nil),    // 7: geegeepb.v1.ProbeTarget
+	(*PingResult)(nil),     // 6: geegeepb.v1.PingResult
+	(*ReportResponse)(nil), // 7: geegeepb.v1.ReportResponse
+	(*ProbeTarget)(nil),    // 8: geegeepb.v1.ProbeTarget
 }
 var file_geegee_proto_depIdxs = []int32{
 	1, // 0: geegeepb.v1.ReportRequest.cpu:type_name -> geegeepb.v1.CPUSummary
@@ -742,14 +859,15 @@ var file_geegee_proto_depIdxs = []int32{
 	3, // 2: geegeepb.v1.ReportRequest.disk:type_name -> geegeepb.v1.DiskSummary
 	4, // 3: geegeepb.v1.ReportRequest.net:type_name -> geegeepb.v1.NetSummary
 	5, // 4: geegeepb.v1.ReportRequest.kvm:type_name -> geegeepb.v1.KVMSummary
-	7, // 5: geegeepb.v1.ReportResponse.probe_targets:type_name -> geegeepb.v1.ProbeTarget
-	0, // 6: geegeepb.v1.ProbeService.ReportMetrics:input_type -> geegeepb.v1.ReportRequest
-	6, // 7: geegeepb.v1.ProbeService.ReportMetrics:output_type -> geegeepb.v1.ReportResponse
-	7, // [7:8] is the sub-list for method output_type
-	6, // [6:7] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	6, // 5: geegeepb.v1.ReportRequest.ping_results:type_name -> geegeepb.v1.PingResult
+	8, // 6: geegeepb.v1.ReportResponse.probe_targets:type_name -> geegeepb.v1.ProbeTarget
+	0, // 7: geegeepb.v1.ProbeService.ReportMetrics:input_type -> geegeepb.v1.ReportRequest
+	7, // 8: geegeepb.v1.ProbeService.ReportMetrics:output_type -> geegeepb.v1.ReportResponse
+	8, // [8:9] is the sub-list for method output_type
+	7, // [7:8] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_geegee_proto_init() }
@@ -763,7 +881,7 @@ func file_geegee_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_geegee_proto_rawDesc), len(file_geegee_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

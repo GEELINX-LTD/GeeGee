@@ -91,6 +91,18 @@ func (r *RingBuffer) Aggregate() *pb.ReportRequest {
 		},
 	}
 
+	for _, p := range latest.Ping {
+		req.PingResults = append(req.PingResults, &pb.PingResult{
+			TargetIp:       p.Target.IP,
+			TargetPort:     int32(p.Target.Port),
+			MinRttMs:       p.MinRTTMs,
+			MaxRttMs:       p.MaxRTTMs,
+			AvgRttMs:       p.AvgRTTMs,
+			PacketLossRate: p.PacketLoss,
+			TargetType:     p.Target.TargetType,
+		})
+	}
+
 	// 聚合完毕，清空当前窗口的数据
 	r.metrics = make([]collector.NodeMetrics, 0, 60)
 	return req

@@ -3,6 +3,8 @@ package collector
 import (
 	"log"
 	"time"
+
+	"github.com/geelinx-ltd/geegee/node/internal/prober"
 )
 
 // MetricHandler 定义了采集到数据后的处理回调
@@ -10,14 +12,16 @@ type MetricHandler func(metrics NodeMetrics)
 
 // Manager 管理所有的采集器生命周期
 type Manager struct {
-	stopChan chan struct{}
-	handler  MetricHandler
+	stopChan   chan struct{}
+	handler    MetricHandler
+	pingProber *prober.Prober
 }
 
 func NewManager(handler MetricHandler) *Manager {
 	return &Manager{
-		stopChan: make(chan struct{}),
-		handler:  handler,
+		stopChan:   make(chan struct{}),
+		handler:    handler,
+		pingProber: prober.NewProber(),
 	}
 }
 
@@ -51,6 +55,8 @@ func (m *Manager) collectAll() NodeMetrics {
 	n.Disk = CollectDisk()
 	n.Net = CollectNet()
 	n.KVM = CollectKVM()
+	// 执行并发 TCPPing 并设定短超时
+	n.Ping = m.pingProber.RunPingCycle(3, 1000*time.Millisecond)
 	return n
 }
 
