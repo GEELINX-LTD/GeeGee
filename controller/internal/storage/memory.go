@@ -7,24 +7,6 @@ import (
 	pb "github.com/geelinx-ltd/geegee/api/proto"
 )
 
-// MetricSnapshot 存储前端展示必要的关键维度
-type MetricSnapshot struct {
-	Timestamp int64   `json:"timestamp"`
-	CPULoad1  float64 `json:"cpu_load1"`
-	MemUsed   float64 `json:"mem_used_percent"`
-	NetBurst  uint64  `json:"net_burst"`
-
-	// 这里保存平均 TCP Rtt (演示取第一个 Target)
-	PingAvgRTT float64 `json:"ping_avg_rtt"`
-}
-
-type NodeStatus struct {
-	NodeID      string           `json:"node_id"`
-	LastSeen    int64            `json:"last_seen"` // Unix milli
-	IsOnline    bool             `json:"is_online"`
-	HistoryFlow []MetricSnapshot `json:"history"` // 环形缓冲，最多 N 条
-}
-
 // MemoryCache 提供给前端直接可用的时序缓冲环
 type MemoryCache struct {
 	mu    sync.RWMutex
@@ -39,7 +21,7 @@ func NewMemoryCache(limit int) *MemoryCache {
 	}
 }
 
-func (m *MemoryCache) Ingest(req *pb.ReportRequest) {
+func (m *MemoryCache) Ingest(req *pb.ReportRequest) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
@@ -74,10 +56,11 @@ func (m *MemoryCache) Ingest(req *pb.ReportRequest) {
 		// 移除最老的一条
 		node.HistoryFlow = node.HistoryFlow[1:]
 	}
+	return nil
 }
 
 // GetNodes 返回所有已知节点当前状态
-func (m *MemoryCache) GetNodes() []NodeStatus {
+func (m *MemoryCache) GetNodes() ([]NodeStatus, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
@@ -89,19 +72,19 @@ func (m *MemoryCache) GetNodes() []NodeStatus {
 		n.IsOnline = (now - n.LastSeen) < 15000
 		list = append(list, *n)
 	}
-	return list
+	return list, nil
 }
 
 // GetNodeHistory 获取指定节点的最新流水线
-func (m *MemoryCache) GetNodeHistory(nodeID string) []MetricSnapshot {
+func (m *MemoryCache) GetNodeHistory(nodeID string, limit int) ([]MetricSnapshot, error) {
 	m.mu.RLock()
 	defer m.mu.RUnlock()
 
 	if node, ok := m.nodes[nodeID]; ok {
-		// 拷贝切片防止数据并发修改引发前端 JSON 序列化崩溃
+		// 对于内存版，不严格限制截断由于它自带长度管控，原样切片拷贝即可
 		cp := make([]MetricSnapshot, len(node.HistoryFlow))
 		copy(cp, node.HistoryFlow)
-		return cp
+		return cp, nil
 	}
-	return nil
+	return nil, nil
 }

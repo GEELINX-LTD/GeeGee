@@ -1,0 +1,10 @@
+storage:
+  type: "sqlite"  # 支持 "sqlite" 或 "victoria"
+  retention_days: 30
+  sqlite:
+    dsn: "geegee.db"
+  victoria:
+    url: "http://localhost:8428/api/v1/import/prometheus"
+
+http:
+  port: ":8080"

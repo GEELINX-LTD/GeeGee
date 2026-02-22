@@ -12,10 +12,10 @@ import (
 type GrpcServer struct {
 	pb.UnimplementedProbeServiceServer
 	db    *storage.TSDB
-	cache *storage.MemoryCache
+	cache storage.Persister
 }
 
-func NewGrpcServer(db *storage.TSDB, cache *storage.MemoryCache) *GrpcServer {
+func NewGrpcServer(db *storage.TSDB, cache storage.Persister) *GrpcServer {
 	return &GrpcServer{
 		db:    db,
 		cache: cache,

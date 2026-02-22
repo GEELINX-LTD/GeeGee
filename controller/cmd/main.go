@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	pb "github.com/geelinx-ltd/geegee/api/proto"
+	"github.com/geelinx-ltd/geegee/controller/config"
 	"github.com/geelinx-ltd/geegee/controller/internal/api"
 	"github.com/geelinx-ltd/geegee/controller/internal/server"
 	"github.com/geelinx-ltd/geegee/controller/internal/storage"
@@ -17,24 +18,46 @@ import (
 func main() {
 	log.Println("Starting GeeGee Controller...")
 
+	// 0. 加载外部配置
+	config.LoadConfig("config.yaml")
+	cfg := config.Cfg
+
 	// 监听端口
 	lis, err := net.Listen("tcp", ":50051")
 	if err != nil {
 		log.Fatalf("failed to listen: %v", err)
 	}
 
-	// 1. 实例化缓存与后端 TSDB
-	// 此处后续可根据配置文件调整写入地址
-	memCache := storage.NewMemoryCache(300) // 维持300条短期记录画图
-	tsdb := storage.NewTSDB("http://localhost:8428/api/v1/import/prometheus")
+	// 1. 初始化统一持久化接口工厂
+	var persister storage.Persister
+
+	if cfg.Storage.Type == "sqlite" {
+		log.Println("Using SQLite Storage Engine...")
+		sqliteDB, err := storage.NewSqliteStore(cfg.Storage.Sqlite.Dsn, cfg.Storage.RetentionDays)
+		if err != nil {
+			log.Fatalf("Failed to open SQLite: %v", err)
+		}
+		persister = sqliteDB
+
+	} else if cfg.Storage.Type == "victoria" {
+		log.Println("Using VictoriaMetrics Storage Engine... (Routing back to original MemoryCache layout + TSDB Push stub)")
+		// 为了给 Victoria 用户同样的前端体验，保留内存环路
+		memCache := storage.NewMemoryCache(300)
+		persister = memCache
+	} else {
+		log.Println("Unknown storage type, fallback to Memory-Only.")
+		persister = storage.NewMemoryCache(300)
+	}
 
 	// 2. 实例化 API 服务供大屏调用
-	httpApi := api.NewHttpServer(":8080", memCache)
+	httpApi := api.NewHttpServer(cfg.Http.Port, persister)
 	go httpApi.Start()
 
 	// 3. 实例化 gRPC 接收端
 	grpcServer := grpc.NewServer()
-	probeServer := server.NewGrpcServer(tsdb, memCache)
+	// 旧版的 NewGrpcServer 目前只接受单一的 persister 或者 (db, memCache)
+	// 我们已经抽象化了存储接口，因此同级重构 `server.NewGrpcServer`
+	probeServer := server.NewGrpcServer(nil, persister)
 
 	// 注册服务
 	pb.RegisterProbeServiceServer(grpcServer, probeServer)

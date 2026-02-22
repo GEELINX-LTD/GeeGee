@@ -11,10 +11,10 @@ import (
 // HttpServer 构建 RESTful API 并暴露 /api 节点用于前端画图读取
 type HttpServer struct {
 	addr  string
-	cache *storage.MemoryCache
+	cache storage.Persister
 }
 
-func NewHttpServer(addr string, cache *storage.MemoryCache) *HttpServer {
+func NewHttpServer(addr string, cache storage.Persister) *HttpServer {
 	return &HttpServer{
 		addr:  addr,
 		cache: cache,
@@ -28,7 +28,11 @@ func (s *HttpServer) Start() {
 	mux.HandleFunc("/api/nodes", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Set("Access-Control-Allow-Origin", "*")
-		nodes := s.cache.GetNodes()
+		nodes, err := s.cache.GetNodes()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
 		if err := json.NewEncoder(w).Encode(nodes); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
@@ -44,7 +48,12 @@ func (s *HttpServer) Start() {
 			return
 		}
 
-		history := s.cache.GetNodeHistory(nodeID)
+		history, err := s.cache.GetNodeHistory(nodeID, 300)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		if err := json.NewEncoder(w).Encode(history); err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 		}
