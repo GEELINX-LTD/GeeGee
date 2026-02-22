@@ -5,6 +5,8 @@ type NodeMetrics struct {
 	CPU  CPUMetrics  `json:"cpu"`
 	Mem  MemMetrics  `json:"mem"`
 	Disk DiskMetrics `json:"disk"`
+	Net  NetMetrics  `json:"net"`
+	KVM  KVMMetrics  `json:"kvm"`
 }
 
 // CPUMetrics 包含 CPU 相关的信息
@@ -35,4 +37,22 @@ type DiskMetrics struct {
 	ReadCount      uint64 `json:"read_count"`
 	WriteCount     uint64 `json:"write_count"`
 	IopsInProgress uint64 `json:"iops_in_progress"`
+}
+
+// NetMetrics 包含 eBPF 高级报文监控信息以及基础网卡速率
+type NetMetrics struct {
+	BytesRecv   uint64 `json:"bytes_recv"`
+	BytesSent   uint64 `json:"bytes_sent"`
+	PacketsRecv uint64 `json:"packets_recv"`
+	PacketsSent uint64 `json:"packets_sent"`
+	// eBPF 采集的微秒级突发包计量特征 (例如最大每秒发包突增数)
+	MicroburstEvents uint64 `json:"microburst_events"`
+}
+
+// KVMMetrics 包含 Libvirt 读取的 KVM 宿主机虚拟机分布与负载情况
+type KVMMetrics struct {
+	TotalVMs       int    `json:"total_vms"`
+	ActiveVMs      int    `json:"active_vms"`
+	TotalAllocVcpu int    `json:"total_alloc_vcpu"`
+	TotalAllocMem  uint64 `json:"total_alloc_mem"`
 }
